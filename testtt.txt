@@ -63,3 +63,73 @@ if (eventIssue) {
 } else {
     log.warn("The event issue is null.")
 }
+
+
+
+
+
+
+
+
+
+
+
+import com.atlassian.jira.bc.issue.search.SearchService
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.issue.ModifiedValue
+import com.atlassian.jira.issue.fields.CustomField
+import com.atlassian.jira.issue.util.DefaultIssueChangeHolder
+import com.atlassian.jira.web.bean.PagerFilter
+import com.atlassian.jira.issue.index.IssueIndexingService
+
+def searchService = ComponentAccessor.getComponentOfType(SearchService)
+def user = ComponentAccessor.jiraAuthenticationContext.loggedInUser
+
+def eventIssue = event.issue
+
+def indexManager = ComponentAccessor.getComponent(IssueIndexingService)
+
+if (eventIssue) {
+    // Step 1: Search for all child issues linked to the current issue through "Parent Link"
+    def filter = "\"Parent Link\" = ${eventIssue.key}"
+    SearchService.ParseResult parseResult = searchService.parseQuery(user, filter)
+    def results = searchService.search(user, parseResult.query, PagerFilter.unlimitedFilter)
+    def issues = results.results
+
+    log.warn("Total child issues linked to ${eventIssue.key}: " + issues.size())
+
+    // Step 2: Calculate the average value of a custom field on linked child issues
+    def customFieldId = "customfield_13111" // Replace with your actual custom field ID
+    def totalCustomFieldValue = 0
+    def numberOfChildIssues = issues.size()
+
+    issues.each { issue ->
+        def customField = ComponentAccessor.customFieldManager.getCustomFieldObject(customFieldId)
+        def childIssueValue = issue.getCustomFieldValue(customField) ?: 0
+
+        // Convert childIssueValue to a numeric type
+        def numericValue = childIssueValue as Number ?: 0
+
+        totalCustomFieldValue += numericValue
+    }
+
+    def averageCustomFieldValue = numberOfChildIssues > 0 ? totalCustomFieldValue / numberOfChildIssues : 0
+
+    // Step 3: Update the current issue's custom field with the calculated average value
+    def currentIssue = eventIssue
+
+    if (currentIssue) {
+        def currentCustomField = ComponentAccessor.customFieldManager.getCustomFieldObject(customFieldId)
+
+        // Create a ModifiedValue and update the custom field value
+        def modifiedValue = new ModifiedValue(currentIssue.getCustomFieldValue(currentCustomField), averageCustomFieldValue)
+        currentCustomField.updateValue(null, currentIssue, modifiedValue, new DefaultIssueChangeHolder())
+        indexManager.reIndex(currentIssue)
+        log.warn("Updated Custom Field on Current Issue ${currentIssue.key} to: " + averageCustomFieldValue)
+    } else {
+        log.warn("Current issue ${currentIssue.key} not found.")
+    }
+} else {
+    log.warn("The event issue is null.")
+}
+
