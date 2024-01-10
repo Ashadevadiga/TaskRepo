@@ -1,0 +1,65 @@
+import com.atlassian.jira.bc.issue.search.SearchService
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.issue.ModifiedValue
+import com.atlassian.jira.issue.fields.CustomField
+import com.atlassian.jira.issue.util.DefaultIssueChangeHolder
+import com.atlassian.jira.web.bean.PagerFilter
+import com.atlassian.jira.issue.index.IssueIndexingService
+
+def searchService = ComponentAccessor.getComponentOfType(SearchService)
+def user = ComponentAccessor.jiraAuthenticationContext.loggedInUser
+ 
+def eventIssue = event.issue
+ 
+ def indexManager = ComponentAccessor.getComponent(IssueIndexingService)
+ 
+if (eventIssue) {
+    def parent = eventIssue.getParentObject()
+    
+    if (parent) {
+        // Handle Epic Issue
+        def parentIssueKey = parent.getKey()
+ 
+        // Step 1: Search for all issues linked to the Epic (assuming "Epic Link" is the link)
+        def filter = "\"Parent Link\" = $parentIssueKey"
+        SearchService.ParseResult parseResult = searchService.parseQuery(user, filter)
+        def results = searchService.search(user, parseResult.query, PagerFilter.unlimitedFilter)
+        def issues = results.results
+ 
+        log.warn("Total issues linked to $parentIssueKey: " + issues.size())
+ 
+        // Step 2: Calculate the average value of a custom field on linked child issues
+        def customFieldId = "customfield_13111" // Replace with your actual custom field ID
+        def totalCustomFieldValue = 0
+        def numberOfChildIssues = issues.size()
+ 
+        issues.each { issue ->
+            def customField = ComponentAccessor.customFieldManager.getCustomFieldObject(customFieldId)
+            def childIssueValue = issue.getCustomFieldValue(customField) ?: 0
+ 
+            // Convert childIssueValue to a numeric type
+            def numericValue = childIssueValue as Number ?: 0
+ 
+            totalCustomFieldValue += numericValue
+        }
+ 
+        def averageCustomFieldValue = numberOfChildIssues > 0 ? totalCustomFieldValue / numberOfChildIssues : 0
+ 
+        // Step 3: Update the Epic issue's custom field with the calculated average value
+        def epicIssue = ComponentAccessor.issueManager.getIssueByCurrentKey(parentIssueKey)
+ 
+        if (epicIssue) {
+            def epicCustomField = ComponentAccessor.customFieldManager.getCustomFieldObject(customFieldId)
+ 
+            // Create a ModifiedValue and update the custom field value
+            def modifiedValue = new ModifiedValue(epicIssue.getCustomFieldValue(epicCustomField), averageCustomFieldValue)
+            epicCustomField.updateValue(null, epicIssue, modifiedValue, new DefaultIssueChangeHolder())
+            indexManager.reIndex(epicIssue)
+            log.warn("Updated Custom Field on Epic $parentIssueKey to: " + averageCustomFieldValue)
+        } else {
+            log.warn("Epic issue $parentIssueKey not found.")
+        }
+    }
+} else {
+    log.warn("The event issue is null.")
+}
