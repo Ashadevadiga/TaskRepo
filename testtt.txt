@@ -143,3 +143,19 @@ if (eventIssue) {
 } else {
     log.warn("The event issue is null.")
 }
+
+
+
+
+
+
+
+
+
+UPDATE jiraaction SET actionbody = replace(actionbody, 'accountid:5cff5ae1d04ff50bbf712f1c', 'rk:81bd152f-ba28-424c-af7f-e097de17bff3') WHERE actionbody LIKE '%[accountid:5cff5ae1d04ff50bbf712f1c]%'; == User mangenent update query
+ 
+psql -h 10.236.178.27 -p 5432  -d wavejira4 -U udl_admin -f  Fixing-cwd_user_202107151222.sql ===> command
+ 
+UPDATE jiraaction SET actionbody = replace(actionbody, 'https://abc.atlassian.net/browse/', 'https://xyz.com:8443/browse/') WHERE actionbody LIKE '%https://abc.atlassian.net/browse/%'; ==> Update the soure link to target in comments
+ 
+UPDATE jiraissue SET description = replace(description, 'https://abc.atlassian.net/browse/', 'https://xyz.com/browse/') WHERE description LIKE '%https://abc.atlassian.net/browse/%';   ==> Update the soure link to target in Description
