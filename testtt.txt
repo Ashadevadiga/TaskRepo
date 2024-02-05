@@ -300,3 +300,23 @@ else {
     log.warn("The event issue is null.")
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE ROLE jirauser WITH LOGIN PASSWORD '12345' VALID UNTIL 'infinity';
+ 
+$CREATE DATABASE jiradb WITH ENCODING 'UNICODE' LC_COLLATE 'C' LC_CTYPE 'C' TEMPLATE template0;
+ 
+grant all on database jiradb to jirauser;
+ 
+ALTER DATABASE jiradb OWNER to jirauser;
