@@ -320,3 +320,30 @@ $CREATE DATABASE jiradb WITH ENCODING 'UNICODE' LC_COLLATE 'C' LC_CTYPE 'C' TEMP
 grant all on database jiradb to jirauser;
  
 ALTER DATABASE jiradb OWNER to jirauser;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Daily Standup call with migration team
+Jira-Aha set up call with Finance transformation team.
+Call with Artur and Valeria for the checklist creation
+Connected with eazy bi support team for the L2 level issues.
+following up the tickets. 
+created eazy bi report for valeria.
+Created checklist for valeria's project.
+Standup call with finance transformation team.
+Connected with philippe and updated the ticket details
+call with swetha regarding eazy bi report.
+Connected with Kyli Li and checked the reports
+Connected with rahul reagrding migration eazy bi reports
+Call with eazy bi support team to discuss about the issues.
